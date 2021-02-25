@@ -17,10 +17,14 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   String _platformVersion = 'Unknown';
+  FlutterAVPlayerViewController _controller;
 
   @override
   void initState() {
     super.initState();
+    _controller = FlutterAVPlayerViewController(
+      onPlaybackComplete: () => _onPlaybackComplete(),
+    );
     initPlatformState();
   }
 
@@ -42,6 +46,10 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _platformVersion = platformVersion;
     });
+  }
+
+  void _onPlaybackComplete() {
+    print("_onPlaybackComplete");
   }
 
   @override
@@ -76,6 +84,7 @@ class _MyAppState extends State<MyApp> {
           child: Center(
             child: FlutterAVPlayerView(
               // filePath: 'assets/videos/butterfly.mp4',
+              controller: _controller,
               urlString:
                   'https://flutter.github.io/assets-for-api-docs/assets/videos/butterfly.mp4',
             ),

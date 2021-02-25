@@ -10,6 +10,7 @@ class FlutterAVPlayerView extends StatelessWidget {
     Key key,
     this.urlString,
     this.filePath,
+    this.controller,
   })  : assert(urlString != null || filePath != null),
         super(key: key);
 
@@ -18,6 +19,9 @@ class FlutterAVPlayerView extends StatelessWidget {
 
   /// Asset name/path for the video file that needs to be played.
   final filePath;
+
+  /// Controller for the widget
+  final FlutterAVPlayerViewController controller;
 
   /// This function packs the available parameters to be sent to native code.
   /// It will check for the URL first, if it is available, then it will be used,
@@ -44,7 +48,52 @@ class FlutterAVPlayerView extends StatelessWidget {
       creationParams:
           getCreateParams(), // parameters to load the video in native code.
       creationParamsCodec:
-          StandardMessageCodec(), // messenger to decode message between flutter and native.
+          StandardMessageCodec(), 
+      onPlatformViewCreated: 
+          _onPlatformViewCreated,// messenger to decode message between flutter and native.
     );
+  }
+
+  void _onPlatformViewCreated(int id) {
+    if (controller == null) {
+      return;
+    }
+    controller.setChannelId(id);
+  }
+}
+
+class FlutterAVPlayerViewController {
+
+  final VoidCallback onPlaybackComplete;
+
+  MethodChannel _channel;
+
+  FlutterAVPlayerViewController({this.onPlaybackComplete});
+  
+  void setChannelId(id) {
+    _channel = new MethodChannel('FlutterAVPlayerView/$id');
+    _channel.setMethodCallHandler(_handleMethod);
+  }
+
+  Future<dynamic> _handleMethod(MethodCall call) async {
+    switch (call.method) {
+      case 'sendFromNative':
+        if(call.arguments is String) {
+          String text = call.arguments as String;
+          if(text == "playerDidFinishPlaying") {
+            if(onPlaybackComplete != null) onPlaybackComplete();
+          }
+        }
+        return Future.value("");
+    }
+  }
+
+  Future<void> receiveFromFlutter(String text) async {
+    try {
+      final String result = await _channel.invokeMethod('receiveFromFlutter', {"text": text});
+      print("Result from native: $result");
+    } on PlatformException catch (e) {
+      print("Error from native: $e.message");
+    }
   }
 }
